@@ -3,6 +3,7 @@ import json
 import random
 import string
 import time
+import os
 
 
 # 1. GENERATOR NA 1 000 000 PAROLI
@@ -75,13 +76,32 @@ def generate_hash_tables():
 
 
 def search_password(h):
-    try:
-        with open("hash_tables.json", "r", encoding="utf-8") as f:
-            tables = json.load(f)
-    except FileNotFoundError:
+    # 1) Proverka dali failut sushtestvuva
+    if not os.path.exists("hash_tables.json"):
         print("!! Greshka: purvo generirai hash tablicite (opc. 1).")
         return
 
+    # 2) Proverka dali failut e prazen (0 bytes)
+    if os.path.getsize("hash_tables.json") == 0:
+        print("!! Greshka: failut hash_tables.json e prazen. Generirai go nanovo (opc. 1).")
+        return
+
+    # 3) Opit za chetene
+    try:
+        with open("hash_tables.json", "r", encoding="utf-8") as f:
+            tables = json.load(f)
+    except json.JSONDecodeError:
+        print("!! Greshka: failut hash_tables.json e povreden. Generirai go nanovo (opc. 1).")
+        return
+
+    # 4) Validaciya dali ima vsichki algoritumi
+    required = ["md5", "sha1", "sha256", "sha512", "sha3_256"]
+    for r in required:
+        if r not in tables:
+            print("!! Greshka: hash tablicite ne sa pulni. Generirai gi nanovo (opc. 1).")
+            return
+
+    # 5) Realno tursene
     for algo, table in tables.items():
         if h in table:
             print(f">> Namereno! Algoritum: {algo.upper()} | Parola: {table[h]}")
